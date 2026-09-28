@@ -1,0 +1,30 @@
+{
+  "name": "dead-signal-exclusion-zone",
+  "private": true,
+  "version": "1.0.0",
+  "description": "DEAD SIGNAL: EXCLUSION ZONE - the Sonnet 5.5 Zombies Game, a single-player extraction-survival FPS built with Three.js",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bridge-mind/sonnet-5-5-zombies-game.git"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/node": "22",
+    "@types/three": "0.186.0",
+    "playwright-core": "^1.63.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
+  }
+}
