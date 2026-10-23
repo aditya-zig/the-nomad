@@ -31,7 +31,7 @@ describe('settings persistence', () => {
     const s = { ...DEFAULT_SETTINGS, sensitivity: 1.7, quality: 'high' as const };
     saveSettings(s);
     expect(loadSettings()).toEqual(s);
-    store.set('deadsignal.settings.v1', '{not json');
+    store.set('nomad.ashfall.settings.v1', '{not json');
     expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
   });
 

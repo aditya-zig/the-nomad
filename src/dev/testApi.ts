@@ -71,6 +71,7 @@ export function installTestApi(game: Game): void {
       headshots: s.stats.headshots,
       shots: [s.stats.shotsFired, s.stats.shotsHit],
       cratesOpened: s.stats.cratesOpened,
+      nomad: { ...s.nomad, trust: { ...s.nomad.trust } },
       defense: { status: s.defense.status, progress: +s.defense.progress.toFixed(3), claimed: s.defense.rewardClaimed },
       hunt: { status: s.hunt.status, identified: s.hunt.identified, claimed: s.hunt.rewardClaimed },
       extraction: { phase: s.extraction.phase, countdown: +s.extraction.countdown.toFixed(1), window: +s.extraction.windowLeft.toFixed(1), calledAt: s.extraction.calledAt },

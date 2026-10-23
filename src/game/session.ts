@@ -1,5 +1,6 @@
 /** Per-run mission state (everything that resets on restart). */
 import { MISSION } from '../config';
+import { createNomad, type NomadState } from '../logic/nomad';
 import { createDefense, createHunt, type DefenseContract, type HuntContract } from '../logic/contracts';
 import { createInventory, type Inventory } from '../logic/economy';
 import { createExtraction, type ExtractionState } from '../logic/extraction';
@@ -10,6 +11,7 @@ export interface Session {
   /** Seconds of simulated mission time (only advances while playing). */
   elapsed: number;
   inv: Inventory;
+  nomad: NomadState;
   vitals: Vitals;
   /** Seconds since the player last took damage (health regeneration delay). */
   sinceDamage: number;
@@ -33,6 +35,7 @@ export function newSession(): Session {
   return {
     elapsed: 0,
     inv: createInventory(),
+    nomad: createNomad(),
     vitals: { health: 100, armor: 50 },
     sinceDamage: 99,
     defense: createDefense(),
@@ -53,6 +56,7 @@ export function buildStats(s: Session, outcome: 'victory' | 'defeat', reason: st
   return {
     outcome,
     reason,
+    nomad: { ...s.nomad, trust: { ...s.nomad.trust } },
     kills: s.stats.kills,
     headshots: s.stats.headshots,
     contractsCompleted: contractsDone,

@@ -1,0 +1,109 @@
+/* Ashfall's identity: soot, chalk and battery green. The live world remains the dominant image. */
+.ds-hud, .ds-menus {
+  --ds-ink: #f1f1e9;
+  --ds-ink-dim: #bec3b4;
+  --ds-ink-faint: #a2aa9c;
+  --ds-amber: #b7eb80;
+  --ds-amber-dim: #7da654;
+  --ds-font-num: Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.ds-panel { background: rgba(14, 18, 15, .92); box-shadow: none; }
+.ds-brk::before, .ds-brk::after { display: none; }
+.ds-scanlines { display: none; }
+.ds-title-main { left: 4vw; width: 54vw; }
+.ds-title-side { right: 4vw; width: 31vw; top: 24px; bottom: 60px; transform: none; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #55634a #141912; }
+.ds-menus .ds-btn.primary { background: var(--ds-amber); color: #10150e; border: 0; clip-path: none; box-shadow: none; }
+.ds-menus .ds-btn.primary:hover { background: #d0f4ac; }
+.ds-title-main .name { font-family: Impact, 'Arial Narrow', Arial, sans-serif; text-shadow: none; }
+.ds-title-main .name .l1 {
+  font-size: clamp(48px, 8.1vw, 148px);
+  letter-spacing: -.025em;
+  line-height: 1;
+}
+.ds-title-main .name .l2 {
+  margin-top: 14px;
+  padding: 0;
+  font-size: clamp(17px, 1.75vw, 28px);
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 500;
+  color: var(--ds-ink);
+}
+.nomad-run {
+  font-size: 19px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ds-amber);
+  margin: 24px 0 12px;
+}
+.ds-title-main .premise {
+  display: block;
+  font-size: clamp(15px, 1.25vw, 19px);
+  line-height: 1.55;
+  letter-spacing: 0;
+  max-width: 34em;
+  text-shadow: none;
+}
+.ds-title-main .actions { gap: 12px; }
+.ds-title-main .ds-btn { letter-spacing: 0; min-height: 44px; font-size: 13px; }
+.ds-title-main .ds-btn.big { padding: 16px 22px; }
+.ds-title-main .note { font-size: 12px; letter-spacing: 0; color: var(--ds-ink-dim); text-transform: none; }
+.ds-title-main .best { border: 0; margin-top: 22px; padding: 0; letter-spacing: 0; }
+.ds-title-main .best .lbl, .ds-title-main .best .sub { font-size: 11px; letter-spacing: 0; }
+.nomad-choice { max-width: 36em; margin-top: 30px; text-transform: none; letter-spacing: 0; }
+.nomad-choice strong { font-size: 18px; }
+.nomad-choice p { font-size: 14px; line-height: 1.5; color: var(--ds-ink-dim); max-width: 30em; margin: 8px 0 0; }
+.ds-title .ds-brief .row { display: block; padding: 12px 16px; border: 0; }
+.ds-title .ds-brief .n, .ds-title .ds-brief .tag, .ds-title .ds-panel-head .aux { display: none; }
+.ds-title .ds-brief .title { font-size: 14px; letter-spacing: 0; }
+.ds-title .ds-brief .text, .ds-title .ds-brief .foot { display: block; font-size: 12px; line-height: 1.5; letter-spacing: 0; }
+.ds-title .ds-brief .foot { padding: 12px 16px; border: 0; }
+.ds-title .ds-panel-head { letter-spacing: 0; }
+.ds-title-foot { left: 4vw; right: 4vw; bottom: 16px; font-size: 11px; letter-spacing: 0; text-transform: none; }
+.nomad-stores {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(14, 18, 15, .92);
+  width: 310px;
+  max-width: 27vw;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.nomad-stock { color: var(--ds-amber); font-weight: 700; }
+.nomad-clans { display: flex; justify-content: space-between; gap: 16px; margin: 6px 0; }
+.nomad-hint { color: var(--ds-ink-dim); font-size: 11px; }
+.nomad-stores[data-low='true'] .nomad-stock { color: #ff9b79; }
+/* Nine numeric trades must fit while pointer lock is active (no scrolling needed). */
+.ds-station .it { padding-top: .45em; padding-bottom: .45em; }
+.ds-station .detail { font-size: max(11px, .72em); }
+.ds-station .label { font-size: max(11px, .75em); }
+.ds-station .sub, .ds-station .hint { font-size: max(10px, .65em); letter-spacing: 0; }
+.ds-right:has(.ds-station:not([hidden])) .ds-obj { display: none; }
+.ds-right:has(.ds-station:not([hidden])) { width: min(420px, 35vw); }
+.ds-station .head { display: block; background: #20291b; }
+.ds-station .head .title, .ds-station .head .sub { display: block; }
+.ds-station .sub { margin-top: 5px; }
+.ds-station .label, .ds-station .note { letter-spacing: 0; }
+.ds-station .mid .line { flex-wrap: wrap; }
+.ds-station .it[data-state='unavailable'], .ds-station .it[data-state='full'],
+.ds-station .it[data-state='owned'], .ds-station .it[data-state='maxed'] { opacity: 1; }
+.ds-results-panel { max-height: 94vh; overflow-y: auto; }
+@media (max-width: 900px) {
+  .ds-title { overflow-y: auto; padding: 36px 24px 24px; display: grid; gap: 28px; align-content: start; }
+  .ds-title-main, .ds-title-side { position: relative; left: auto; right: auto; top: auto; width: 100%; transform: none; bottom: auto; overflow: visible; }
+  .ds-title-main .name .l1 { font-size: clamp(48px, 11vw, 100px); }
+  .ds-title-main .name .l2 { font-size: 22px; }
+  .ds-title-main .premise { font-size: 16px; }
+  .ds-title-side { gap: 20px; }
+  .ds-title-foot { position: relative; left: auto; right: auto; bottom: auto; }
+  .nomad-choice { margin-top: 24px; }
+}
+@media (max-height: 720px) and (min-width: 901px) {
+  .nomad-choice { margin-top: 18px; }
+  .ds-title-main .best { display: none; }
+  .ds-title-main .premise { margin-bottom: 18px; }
+  .ds-title .ds-brief .row { padding: 8px 12px; }
+}

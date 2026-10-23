@@ -70,6 +70,7 @@ export interface HudTimer {
 }
 
 export interface HudState {
+  nomad?: import('../logic/nomad').NomadState;
   health: number;
   maxHealth: number;
   armor: number;

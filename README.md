@@ -1,59 +1,65 @@
-# Sonnet 5.5 Zombies Game
+# THE NOMAD: Survive the Wastelands
 
-**DEAD SIGNAL: EXCLUSION ZONE** — a single-player, first-person zombie extraction shooter that runs in your browser.
+**Ashfall Run** — a single-player 3D browser survival shooter. Scavenge power cells, make clan alliances, fight the infected, and bring your caravan home.
 
-Built by Claude Sonnet 5.5 and its sub-agents in Claude Code from a single prompt, using Three.js, TypeScript and Vite.
-Every model, texture and sound is generated in code: no downloaded assets, no backend, no accounts.
-
-Drop into a quarantined industrial district at blue hour, finish two contracts, upgrade your gear, then call the
-helicopter and hold out long enough to board it.
+A substantial local adaptation of [DEAD SIGNAL: EXCLUSION ZONE](https://github.com/bridge-mind/sonnet-5-5-zombies-game) by bridge-mind. The original Three.js combat, procedural models, world and synthesized audio remain the foundation; the new expedition mechanics and presentation are described below. Original documentation: [UPSTREAM.md](UPSTREAM.md). Original notices remain in [LICENSE](LICENSE).
 
 ## Play
 
+Node 22.12+, pnpm, and a desktop browser with hardware-accelerated WebGL 2 are required.
+
 ```bash
-pnpm install
-pnpm dev        # http://127.0.0.1:5173
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-You need Node.js 22.12 or newer, [pnpm](https://pnpm.io/), and a desktop browser with WebGL 2 and Pointer Lock
-(developed and tested in Chrome). Click **DEPLOY** to capture the mouse; **Esc** pauses.
+Open the printed localhost address. Click **ENTER THE WASTELAND** to capture the mouse and enable sound. **Esc** pauses; headphones recommended. Menus adapt to smaller screens, but gameplay requires keyboard and mouse, not touch.
 
-## The mission
+### Memory-capped Linux launcher
 
-1. **Restore the relay** — activate the transmitter, then stay inside the marked circle for 55 seconds while the infected converge on it.
-2. **Eliminate the Warden** — find the armored elite in the research compound. Shoot the helmet off, then go for the head.
-3. **Extract** — call the helicopter from the LZ radio, survive the final horde, and board it alive.
+```bash
+pnpm play:safe
+```
 
-Each contract pays out once. Tougher zombies and better loot wait in the higher-threat regions. Spend your cash at the supply
-cages and the armory bench. At 7:30 a contamination surge spreads out from the compound, and the district is sealed at 12:00.
-You lose if you die, if the district seals before you call extraction, or if the helicopter leaves without you.
+This starts one isolated Chrome/Chromium game browser at **http://127.0.0.1:5314**, capped at **1280 MiB RAM / no swap**, and a server capped at 384 MiB. It refuses a second launcher-owned browser or less than 1.8 GiB available RAM. It never closes other apps. Requires a systemd user session and X11/XWayland. These are process-tree limits, **not a cap on separate GPU/driver allocations**. Use Medium or Low quality on integrated graphics; High remains an opt-in expensive preset.
+
+Stop only the game services:
+
+```bash
+systemctl --user stop nomad-browser nomad-dev
+```
+
+## The expedition
+
+- **Scavenge:** hold **E** at power caches. Green battery bundles mark the loot. Low / medium / high-threat caches provide **1 / 2 / 3 cells**, plus water, food and the original combat supplies.
+- **Restore the relay:** spend **2 cells**, then defend the depot uplink for 55 seconds.
+- **Choose your allies:** at any trading post or armory, press **E**, then **7** or **8** to share a cell. Each donation adds **20 trust** to that clan; trust starts at 20. Two donations to one clan secure its alliance.
+  - **Ember Union [7]:** water +40, food +35.
+  - **Iron Vultures [8]:** armor +25, funds +$150.
+- **Survive:** water and food drain while playing; sprinting uses more water. Empty supplies damage health. Salvage replenishes supplies; **9** at a trading post refills both for **$100**.
+- **Hunt:** eliminate the Warden in the research compound.
+- **Bring power home:** finish both contracts, earn **60 trust with either clan**, and carry **3 cells** to the LZ Echo beacon. Calling extraction spends those cells once. Survive the horde and board the helicopter.
+
+A minimum successful resource budget is **7 salvaged cells**: 2 relay + 2 shared + 3 convoy cargo. Spending cells on one purpose means they cannot serve another. The ash/contamination surge starts at 7:30; the district seals at 12:00. Restart resets every expedition resource and clan relationship.
 
 ## Controls
 
-| Key | Action | Key | Action |
-| --- | --- | --- | --- |
-| `W A S D` | Move | `E` | Interact (hold where prompted) |
-| Mouse | Look | `1` / `2` or wheel | Switch weapon |
-| Left / right mouse | Fire / aim down sights | `G` | Throw frag grenade |
-| `R` | Reload | `Q` | Apply armor plate |
-| `Shift` | Sprint | `M` | Tactical map |
-| `Space` / `C` | Jump / crouch (toggle) | `Esc` | Pause |
-
-At a supply cage or the armory bench, press `E` to open it and `1`–`6` to buy.
+- **WASD / mouse:** move / look. **Shift:** sprint. **Space / C:** jump / crouch.
+- **Left / right mouse:** fire / aim. **R:** reload. **1 / 2 / wheel:** switch weapons.
+- **E:** interact; hold where prompted. **G:** grenade. **Q:** armor plate.
+- **M:** tactical map. **Esc:** pause.
+- **At a trading post:** **1–6** original equipment purchases; **7 / 8** share with Ember / Iron; **9** buy survival supplies. The world continues while trading.
 
 ## Development
 
 ```bash
-pnpm build       # type-check and build to dist/
-pnpm preview     # serve the production build
+pnpm build
 pnpm typecheck
-pnpm test        # unit tests for the game rules (vitest)
+pnpm test --maxWorkers=1
 ```
 
-Game balance lives in `src/config.ts`. `scripts/` has optional headless-Chrome QA helpers (they use your installed Chrome,
-override the path with `CHROME_PATH`) and `dev/` has per-module preview pages served by `pnpm dev`.
-See [ASSETS.md](./ASSETS.md) for asset and dependency notes.
+The Medium preset is tuned for integrated GPUs: 1× pixel-ratio cap, 1024px directional shadows, no bloom or MSAA targets, and reduced transient effect budgets. Existing automatic resolution scaling remains enabled.
 
-## License
+New rules: `src/logic/nomad.ts`. Game integration: `src/game/`. Presentation: `src/ui/nomad.css`, `src/ui/nomadView.ts`, `src/render/stage.ts`. Battery models: `src/world/powerCells.ts`. No new runtime dependencies or external assets.
 
-[MIT](./LICENSE)
+See [NOMAD.md](NOMAD.md) for validation, limitations and attribution. Local screenshots and the staged gameplay recording with actual game audio live in `artifacts/` (excluded from git).

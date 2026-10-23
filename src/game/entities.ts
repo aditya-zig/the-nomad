@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { ECONOMY, GRENADE, PLAYER, REGIONS, WEAPONS } from '../config';
 import { addReserve, isFull } from '../logic/ammo';
 import { applyCrateReward, rollCrateReward } from '../logic/economy';
+import { NOMAD, salvageCache } from '../logic/nomad';
+import { PowerCellModels } from '../world/powerCells';
 import type { Region } from '../types';
 import type { CrateDef, StationDef } from '../world/layout/data';
 import { createLootCrate, createPickupModel, createStationModel, type CrateModel, type PickupKind, type StationModel } from '../world/models';
@@ -39,12 +41,14 @@ export class Entities {
   private readonly pickups: Pickup[] = [];
   private readonly pickupFree: Record<PickupKind, THREE.Object3D[]> = { ammo: [], plate: [], grenade: [] };
   readonly root = new THREE.Group();
+  private readonly cellModels = new PowerCellModels();
 
   constructor(private readonly ctx: GameCtx) {
     this.root.name = 'Entities';
     ctx.worldRoot.add(this.root);
     for (const def of ctx.level.data.crates) {
       const model = createLootCrate(def.region, ctx.mats);
+      model.root.add(this.cellModels.create(NOMAD.cellYield[def.region]));
       model.root.position.set(def.x, 0, def.z);
       model.root.rotation.y = def.yaw;
       this.root.add(model.root);
@@ -66,6 +70,7 @@ export class Entities {
       c.discovered = false;
       c.model.setOpen(0);
       c.model.setLooted(false);
+      c.model.root.getObjectByName('NomadPowerCells')!.visible = true;
     }
     for (const s of this.stations) s.model.setState('idle');
     this.clearPickups();
@@ -173,6 +178,9 @@ export class Entities {
     const ctx = this.ctx;
     c.opened = true;
     ctx.session.stats.cratesOpened++;
+    const cells = salvageCache(ctx.session.nomad, c.def.region);
+    c.model.root.getObjectByName('NomadPowerCells')!.visible = false;
+    ctx.feed(`+${cells} POWER CELL${cells > 1 ? 'S' : ''}  /  SUPPLIES REPLENISHED`, 'good');
     const inv = ctx.session.inv;
     const reward = rollCrateReward(c.def.region, inv, ctx.rng);
     const applied = applyCrateReward(inv, reward);
@@ -200,6 +208,7 @@ export class Entities {
   }
 
   dispose(): void {
+    this.cellModels.dispose();
     this.root.removeFromParent();
   }
 }

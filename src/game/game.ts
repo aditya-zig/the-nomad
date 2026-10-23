@@ -19,6 +19,7 @@ import { addCash, killReward } from '../logic/economy';
 import { escalationPhase } from '../logic/mission';
 import { extractionInProgress } from '../logic/extraction';
 import { Rng } from '../logic/rng';
+import { advanceSurvival } from '../logic/nomad';
 import { Input, type Edges } from '../player/input';
 import { mouseToRadians, Player, type PlayerControl } from '../player/player';
 import { checkCapabilities, GameRenderer } from '../render/renderer';
@@ -153,7 +154,7 @@ export class Game implements GameCtx {
 
     const caps = checkCapabilities();
     if (!caps.ok) {
-      this.menus.showError('Unsupported browser', caps.problems.join(' '), 'DEAD SIGNAL needs WebGL 2 and the Pointer Lock API (desktop keyboard and mouse).');
+      this.menus.showError('Unsupported browser', caps.problems.join(' '), 'THE NOMAD needs WebGL 2 and the Pointer Lock API (desktop keyboard and mouse).' );
       return false;
     }
 
@@ -465,7 +466,7 @@ export class Game implements GameCtx {
     if (fresh || wasTitle) {
       this.audio.play('ui_deploy', { priority: 3 });
       if (!this.ambience || !this.ambience.active) this.ambience = this.audio.startLoop('ambience', { volume: 0.8, fadeIn: 2 });
-      this.banner('OPERATION DEAD SIGNAL', 'Contain the outbreak. Restore the relay. Kill the Warden. Extract.', 'info', 4.5);
+      this.banner('THE NOMAD / ASHFALL RUN', 'Scavenge power. Choose your allies. Bring the caravan home.', 'info', 4.5);
     }
   }
 
@@ -710,6 +711,19 @@ export class Game implements GameCtx {
     // ---- health regeneration ----
     s.sinceDamage += dt;
     if (alive && !this.mission.insideHazard) s.vitals.health = regenHealth(s.vitals.health, s.sinceDamage, dt);
+
+    // Survival advances only in the live simulation: pause / title / results never drain supplies.
+    if (alive) {
+      const damage = advanceSurvival(s.nomad, dt, this.player.sprinting);
+      if (damage > 0) {
+        s.sinceDamage = 0; // starvation must not be cancelled by health regeneration
+        this.hurtPlayer(damage, null, null, { ignoreArmor: true });
+      }
+      if (s.nomad.water < 25 && !s.flags.has('nomad-thirst')) {
+        s.flags.add('nomad-thirst');
+        this.banner('WATER RUNNING LOW', 'Salvage caches or buy supplies [9] at any trading post.', 'warn', 4);
+      }
+    }
 
     // ---- mission ----
     this.mission.update(dt, this.renderer.camera, this.time);

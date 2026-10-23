@@ -56,6 +56,8 @@ export interface BestRun {
 
 /** Final statistics for the results screen. */
 export interface MissionStats {
+  /** Present for Nomad expeditions; optional for upstream preview fixtures. */
+  nomad?: import('./logic/nomad').NomadState;
   outcome: 'victory' | 'defeat';
   /** Human-readable reason, e.g. "Extracted", "KIA", "Contamination overran the LZ". */
   reason: string;

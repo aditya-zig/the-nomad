@@ -4,6 +4,8 @@
  * request pointer lock and start audio inside the user gesture.
  */
 import './styles.css';
+import './nomad.css';
+import { alliedClan, CLANS } from '../logic/nomad';
 import { DEFAULT_SETTINGS, REGIONS } from '../config';
 import type { BestRun, MissionStats, Settings } from '../types';
 import { el, fmtClock, fmtInt, fmtMoney } from './dom';
@@ -18,17 +20,17 @@ const BRIEF: { tag: string; title: string; text: string }[] = [
   {
     tag: 'CONTRACT ALPHA',
     title: 'RESTORE THE RELAY',
-    text: 'Activate the depot transmitter and hold the marked area while the uplink completes.',
+    text: 'Salvage 2 power cells from glowing caches. Spend them at the depot and defend the uplink.',
   },
   {
-    tag: 'CONTRACT BRAVO',
-    title: 'ELIMINATE THE WARDEN',
-    text: 'Locate and kill the elite infected inside the research compound.',
+    tag: 'CLAN ALLEGIANCE',
+    title: 'POWER EARNS LOYALTY',
+    text: 'Share cells at trading posts: 7 helps Ember, 8 helps Iron. Two donations earn a clan alliance. Hunt the Warden in the compound.',
   },
   {
     tag: 'EXTRACT',
-    title: 'LZ ECHO',
-    text: 'Radio the helicopter, survive the final horde and board before the district seals.',
+    title: 'BRING THE CARAVAN HOME',
+    text: 'Carry 3 cells, earn 60 trust with either clan, finish both contracts, then call your clan’s helicopter at LZ Echo.',
   },
 ];
 
@@ -64,6 +66,7 @@ class Menus implements MenusApi {
     if (this.root) return;
     this.root = root;
     this.layer = el('div', 'ds-menus', root);
+    this.layer.dataset.ui = 'nomad-game';
     window.addEventListener('keydown', this.onKey);
   }
 
@@ -199,29 +202,27 @@ class Menus implements MenusApi {
 
     // ---- left: title block ----
     const main = el('div', 'ds-title-main', root);
-    const kicker = el('div', 'kicker', main);
-    el('span', 'haz', kicker);
-    el('span', '', kicker, 'SECTOR 7  //  QUARANTINE PERIMETER  //  BLUE HOUR');
     const h1 = el('h1', 'name', main);
-    el('span', 'l1', h1, 'DEAD SIGNAL');
-    el('span', 'l2', h1, 'EXCLUSION ZONE');
-    const sig = el('div', 'sigline', main);
-    for (let i = 0; i < 5; i++) el('i', '', sig);
-    el('span', '', sig, 'NO CARRIER  -  LAST KNOWN POSITION: RESEARCH COMPOUND');
+    el('span', 'l1', h1, 'THE NOMAD');
+    el('span', 'l2', h1, 'Survive the Wastelands');
+    el('p', 'nomad-run', main, 'Ashfall Run');
     el(
       'p',
       'premise',
       main,
-      'The district has been sealed for nine days. Insert at the checkpoint, clear two contracts, call the bird, and get out before the surge takes the landing zone.',
+      'The cities went dark. The clans did not. Scavenge the dead district for power, fight the infected, and decide who gets to see another dawn.',
     );
 
     const actions = el('div', 'actions', main);
-    const deployBtn = this.button(actions, 'DEPLOY', 'primary big', () => this.deploy());
-    deployBtn.setAttribute('aria-label', 'Deploy into the exclusion zone');
+    const deployBtn = this.button(actions, 'ENTER THE WASTELAND', 'primary big', () => this.deploy());
+    deployBtn.setAttribute('aria-label', 'Enter the wasteland');
     let showTab: (w: 'controls' | 'settings') => void = () => {};
     this.button(actions, 'SETTINGS', '', () => showTab('settings'));
     this.button(actions, 'CONTROLS', '', () => showTab('controls'));
-    el('div', 'note', main, 'Deploy captures the mouse. Press ESC at any time to pause.');
+    el('div', 'note', main, 'Keyboard + mouse. Esc pauses. Headphones recommended.');
+    const choice = el('div', 'nomad-choice', main);
+    el('strong', '', choice, 'Every cell is a choice.');
+    el('p', '', choice, 'Ember keeps people alive. Iron keeps the perimeter standing. Your convoy needs power too.');
 
     const bestEl = el('div', 'best', main);
     if (best) {
@@ -254,12 +255,12 @@ class Menus implements MenusApi {
       el('span', 'title', tt, item.title);
       el('div', 'text', body, item.text);
     }
-    el('div', 'foot', brief, 'Loot caches, buy gear and upgrade weapons along the way. A contamination surge closes in late in the mission.');
+    el('div', 'foot', brief, 'Water and food drain as you travel. Caches restore both. At a trading post, 9 buys a full refill. The ash surge arrives at 7:30.');
 
     const panel = el('div', 'ds-sidepanel ds-panel ds-brk', side);
     showTab = this.tabs(panel, buildControlsPanel(), this.makeSettingsPanel(), 'controls');
 
-    el('div', 'ds-title-foot', root, 'DEAD SIGNAL: EXCLUSION ZONE  //  SINGLE-PLAYER  //  KEYBOARD AND MOUSE');
+    el('div', 'ds-title-foot', root, 'THE NOMAD / ASHFALL RUN · Adapted from DEAD SIGNAL by bridge-mind · Local single-player');
 
     this.setScreen('title', root);
     deployBtn.focus({ preventScroll: true });
@@ -336,6 +337,14 @@ class Menus implements MenusApi {
     cell('ACCURACY', `${accuracy}   ${fmtInt(stats.shotsHit)} / ${fmtInt(stats.shotsFired)}`);
     cell('CONTRACTS', `${stats.contractsCompleted} / ${stats.contractsTotal}`, stats.contractsCompleted >= stats.contractsTotal ? 'good' : '');
     cell('SUPPLY CACHES', fmtInt(stats.cratesOpened));
+    if (stats.nomad) {
+      const n = stats.nomad;
+      const ally = alliedClan(n);
+      cell('CELLS SALVAGED / SHARED', `${n.cellsFound} / ${n.cellsShared}`);
+      cell('CLAN ALLIANCE', ally ? CLANS[ally].toUpperCase() : 'UNALIGNED');
+      cell('EMBER / IRON TRUST', `${n.trust.ember} / ${n.trust.iron}`);
+      cell('CONVOY CARGO', n.cargoLoaded ? '3 CELLS SECURED' : `${n.cells} CELLS CARRIED`);
+    }
     cell('CASH EARNED', fmtMoney(stats.cashEarned));
     cell('CASH SPENT', fmtMoney(stats.cashSpent));
     cell('AMMO COLLECTED', fmtInt(stats.ammoCollected));

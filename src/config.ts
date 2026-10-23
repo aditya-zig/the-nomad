@@ -801,16 +801,17 @@ export const QUALITY: Record<QualityLevel, QualityPreset> = {
     maxEnemies: 24,
     decalScale: 0.5,
   },
+  // Integrated-GPU preset: retain directional shadows without HDR bloom / multisample targets.
   medium: {
-    pixelRatioCap: 1.5,
+    pixelRatioCap: 1,
     shadows: true,
-    shadowMapSize: 2048,
-    bloom: true,
-    msaaSamples: 2,
-    lightPool: 5,
-    particleScale: 0.8,
-    maxEnemies: 34,
-    decalScale: 0.8,
+    shadowMapSize: 1024,
+    bloom: false,
+    msaaSamples: 0,
+    lightPool: 4,
+    particleScale: 0.65,
+    maxEnemies: 28,
+    decalScale: 0.65,
   },
   high: {
     pixelRatioCap: 2,
@@ -836,8 +837,8 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export const RENDER = {
-  fogColor: 0x3b4c62,
-  fogDensity: 0.0105,
+  fogColor: 0x887c65,
+  fogDensity: 0.0096,
   exposure: 1.15,
   viewmodelFov: 52,
   near: 0.06,

@@ -22,6 +22,7 @@ export function buildHudState(ctx: GameCtx, mission: MissionRuntime, io: Interac
   const outOfAmmo = !!cur && cur.mag === 0 && cur.reserve === 0;
   const hp = s.vitals.health;
   return {
+    nomad: s.nomad,
     health: s.vitals.health,
     maxHealth: PLAYER.maxHealth,
     armor: s.vitals.armor,

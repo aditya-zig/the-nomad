@@ -3,6 +3,8 @@
  * helicopter door. Produces the HUD prompt / station panel each frame and executes actions exactly once.
  */
 import { ECONOMY, MISSION, PLAYER, WEAPONS } from '../config';
+import { addCash, spendCash } from '../logic/economy';
+import { CLANS, NOMAD, refillSupplies, shareCell, type Clan } from '../logic/nomad';
 import { buyMenu, purchaseBuy, purchaseUpgrade, upgradeMenu, type BuyItemId, type StationItem } from '../logic/economy';
 import type { Edges } from '../player/input';
 import type { HudPrompt, StationPanel } from '../ui/hudTypes';
@@ -156,8 +158,8 @@ export class Interaction {
       targets.push({
         id: `crate:${c.def.id}`,
         dist: d,
-        text: 'OPEN SUPPLY CACHE',
-        sub: 'Cash, ammunition, armor plates',
+        text: 'SALVAGE POWER CACHE',
+        sub: `${NOMAD.cellYield[c.def.region]} power cell(s), water, rations and ammunition`,
         tone: 'normal',
         hold: ECONOMY.crateOpenTime,
         enabled: true,
@@ -170,8 +172,8 @@ export class Interaction {
       targets.push({
         id: `station:${s.def.id}`,
         dist: d,
-        text: s.def.kind === 'buy' ? 'USE SUPPLY CAGE' : 'USE ARMORY BENCH',
-        sub: s.def.kind === 'buy' ? 'Ammo, armor, grenades, weapons' : 'Upgrade your weapons',
+        text: s.def.kind === 'buy' ? 'CLAN TRADING POST' : 'CLAN ARMORY',
+        sub: 'Trade gear or share cells: 7 Ember / 8 Iron / 9 supplies',
         tone: 'normal',
         hold: 0,
         enabled: true,
@@ -190,8 +192,8 @@ export class Interaction {
         targets.push({
           id: 'transmitter',
           dist: d,
-          text: 'ACTIVATE TRANSMITTER',
-          sub: `Hold the marked area for ${MISSION.defense.duration}s while the uplink completes`,
+          text: ctx.session.nomad.cells >= NOMAD.relayCells ? 'POWER THE CLAN RELAY' : 'RELAY NEEDS 2 POWER CELLS',
+          sub: `Costs 2 cells. Defend the uplink for ${MISSION.defense.duration}s`,
           tone: 'warn',
           hold: MISSION.defense.activateHold,
           enabled: true,
@@ -206,7 +208,7 @@ export class Interaction {
       const st = this.mission.terminalState();
       if (d < 3.6 && st !== 'busy') {
         if (st === 'locked') {
-          targets.push({ id: 'terminal-locked', dist: d, text: 'RADIO BEACON LOCKED', sub: 'Complete both contracts to call extraction', tone: 'warn', hold: 0, enabled: false, onUse: () => {} });
+          targets.push({ id: 'terminal-locked', dist: d, text: 'CONVOY BEACON LOCKED', sub: 'Finish contracts, carry 3 cells and earn 60 trust with either clan', tone: 'warn', hold: 0, enabled: false, onUse: () => {} });
         } else {
           targets.push({
             id: 'terminal',
@@ -247,16 +249,53 @@ export class Interaction {
     const inv = this.ctx.session.inv;
     const buy = s.def.kind === 'buy';
     return {
-      title: s.def.name,
-      subtitle: `FUNDS  $${inv.cash.toLocaleString('en-US')}`,
-      items: items.map((i) => ({ key: i.key, label: i.label, detail: i.detail, cost: i.cost, state: i.state, note: i.note })),
-      hint: buy ? 'PRESS NUMBER TO BUY   E / WALK AWAY TO CLOSE   WEAPON BUYS REPLACE THE EQUIPPED WEAPON' : 'PRESS 1 / 2 TO UPGRADE   E / WALK AWAY TO CLOSE',
+      title: buy ? 'WASTELAND EXCHANGE' : 'CLAN ARMORY',
+      subtitle: `$${inv.cash.toLocaleString('en-US')}  /  ${this.ctx.session.nomad.cells} CELLS  /  SHARE TO EARN TRUST`,
+      items: [
+        ...items.map((i) => ({ key: i.key, label: i.label, detail: i.detail, cost: i.cost, state: i.state, note: i.note })),
+        ...(['ember', 'iron'] as const).map((clan, i) => ({
+          key: String(i + 7), label: `SHARE WITH ${CLANS[clan].toUpperCase()}`,
+          detail: clan === 'ember' ? '1 cell → +20 trust, water +40, rations +35' : '1 cell → +20 trust, armor +25, $150',
+          cost: 0, note: `${this.ctx.session.nomad.trust[clan]} TRUST`,
+          state: this.ctx.session.nomad.trust[clan] >= 100 ? 'maxed' as const : this.ctx.session.nomad.cells > 0 ? 'ok' as const : 'unavailable' as const,
+        })),
+        { key: '9', label: 'WATER + RATIONS', detail: 'Refill both survival supplies to 100%', cost: NOMAD.refillCost,
+          state: inv.cash >= NOMAD.refillCost ? 'ok' : 'unaffordable' },
+      ],
+      hint: 'PRESS NUMBER TO TRADE / SHARE   E OR WALK AWAY TO CLOSE',
     };
   }
 
   private handleDigit(s: StationRuntime, digit: number): void {
     const ctx = this.ctx;
     const inv = ctx.session.inv;
+    if (digit >= 7 && digit <= 9) {
+      const n = ctx.session.nomad;
+      let ok = false;
+      if (digit === 9) {
+        if (n.water < 100 || n.food < 100) {
+          ok = spendCash(inv, NOMAD.refillCost);
+          if (ok) refillSupplies(n);
+        }
+        ctx.feed(ok ? 'SUPPLIES REFILLED  -$100' : 'SUPPLIES FULL OR NOT ENOUGH FUNDS', ok ? 'good' : 'warn');
+      } else {
+        const clan: Clan = digit === 7 ? 'ember' : 'iron';
+        ok = shareCell(n, clan);
+        if (ok) {
+          if (clan === 'iron') {
+            addCash(inv, 150);
+            ctx.session.vitals.armor = Math.min(PLAYER.maxArmor, ctx.session.vitals.armor + 25);
+          }
+          ctx.radio(CLANS[clan].toUpperCase(), clan === 'ember'
+            ? 'Our water pumps are running again. Take these rations. We remember who shares.'
+            : 'A cell for our defenses. You earned your cut, Nomad.');
+          ctx.feed(`${CLANS[clan].toUpperCase()}  +20 TRUST  /  -1 CELL`, 'good');
+        } else ctx.feed('NEED A POWER CELL / CLAN TRUST ALREADY FULL', 'warn');
+      }
+      ctx.audio.play(ok ? 'buy_ok' : 'buy_denied', { priority: 2 });
+      s.model.setState(ok ? 'used' : 'denied');
+      return;
+    }
     const items = this.items(s);
     const item = items.find((i) => i.key === String(digit));
     if (!item) return;

@@ -4,6 +4,8 @@
  * canvas draws (minimap always, tactical map only while open).
  */
 import './styles.css';
+import './nomad.css';
+import { NomadView } from './nomadView';
 import { TextCell, el, fmtMoney, setHidden } from './dom';
 import {
   BannerView,
@@ -46,6 +48,7 @@ class Hud implements HudApi {
   private hazard!: HazardView;
   private boss!: BossView;
   private region!: RegionView;
+  private nomad!: NomadView;
   private minimap!: Minimap;
   private tacMap!: TacticalMap;
   private tacRoot!: HTMLElement;
@@ -61,6 +64,7 @@ class Hud implements HudApi {
     this.root = root;
     const hud = el('div', 'ds-hud', root);
     this.hud = hud;
+    hud.dataset.ui = 'nomad-game';
 
     // ---- full-screen effects ----
     this.fx = new ScreenFx(hud);
@@ -72,6 +76,7 @@ class Hud implements HudApi {
     mmCanvas.setAttribute('aria-label', 'Minimap');
     this.minimap = new Minimap(mmCanvas);
     this.region = new RegionView(tl);
+    this.nomad = new NomadView(tl);
 
     // ---- top-centre: compass, clocks, hazard, boss ----
     const tc = el('div', 'ds-topcenter', hud);
@@ -143,6 +148,7 @@ class Hud implements HudApi {
   }
 
   update(s: HudState, map: MapDynamic, dt: number): void {
+    this.nomad.update(s.nomad);
     if (!this.root || !this.visible) return;
 
     this.fx.setVignette(s.vignette);

@@ -17,6 +17,7 @@ import {
   updateHunt,
 } from '../logic/contracts';
 import { applyContractReward } from '../logic/economy';
+import { alliedClan, CLANS, convoyReady, loadConvoy, NOMAD, powerRelay } from '../logic/nomad';
 import {
   boardHelicopter,
   callExtraction,
@@ -135,6 +136,12 @@ export class MissionRuntime implements MissionApi {
   activateTransmitter(): void {
     const ctx = this.ctx;
     const s = ctx.session;
+    if (s.defense.status !== 'available') return;
+    if (!powerRelay(s.nomad)) {
+      ctx.banner('NO POWER', 'Salvage 2 cells from the glowing caches before starting the relay.', 'warn', 3);
+      ctx.audio.play('buy_denied', { priority: 2 });
+      return;
+    }
     if (!activateDefense(s.defense)) return;
     ctx.level.transmitter.setState('active');
     ctx.audio.play('defense_start', { priority: 3 });
@@ -151,7 +158,7 @@ export class MissionRuntime implements MissionApi {
   terminalState(): 'locked' | 'available' | 'busy' {
     const ph = this.ctx.session.extraction.phase;
     if (ph === 'locked') return 'locked';
-    if (ph === 'available') return 'available';
+    if (ph === 'available') return convoyReady(this.ctx.session.nomad) ? 'available' : 'locked';
     return 'busy';
   }
 
@@ -159,8 +166,10 @@ export class MissionRuntime implements MissionApi {
     const ctx = this.ctx;
     const s = ctx.session;
     const p = ctx.player;
+    if (!convoyReady(s.nomad)) return false;
     const inLz = Math.hypot(p.x - this.lz.lzX, p.z - this.lz.lzZ) <= this.lz.lzRadius;
     if (!callExtraction(s.extraction, s.elapsed, inLz, ctx.playerAlive())) return false;
+    loadConvoy(s.nomad); // charged exactly once, after the normal extraction guards succeed
     this.terminal.setState('called');
     const f = this.terminal.flareLocal.clone();
     this.terminal.root.localToWorld(f);
@@ -170,7 +179,7 @@ export class MissionRuntime implements MissionApi {
     this.flareLoop = ctx.audio.startLoop('flare', { volume: 0.7, pos: { x: f.x, y: 0.5, z: f.z } });
     ctx.audio.play('flare_ignite', { pos: { x: f.x, y: 0.5, z: f.z }, priority: 3 });
     ctx.audio.play('radio_chirp', { priority: 3 });
-    ctx.banner('EXTRACTION CALLED', 'Hold the landing zone - helicopter ETA 1:00', 'danger', 5);
+    ctx.banner('CONVOY DISPATCHED', '3 power cells loaded / hold the landing zone', 'danger', 5);
     ctx.radio('COMMAND', "Bird is inbound. Hold the perimeter - everything nearby is heading your way.");
     ctx.feed('EXTRACTION REQUESTED', 'danger');
     this.beam.visible = true;
@@ -311,9 +320,9 @@ export class MissionRuntime implements MissionApi {
     }
 
     // ---- unlock extraction ----
-    if (unlockExtraction(ex, allContractsComplete(s.defense, s.hunt))) {
+    if (unlockExtraction(ex, allContractsComplete(s.defense, s.hunt) && convoyReady(s.nomad))) {
       ctx.banner('EXTRACTION AVAILABLE', 'Proceed to LZ ECHO and signal the helicopter', 'good', 5);
-      ctx.radio('COMMAND', 'Both contracts complete. Move to LZ Echo and radio the bird.');
+      ctx.radio('CARAVAN', `${CLANS[alliedClan(s.nomad)!]} vouch for you. Bring those 3 cells to LZ Echo. Our pilot is standing by.`);
       ctx.audio.play('contract_complete', { priority: 3 });
       this.beam.visible = true;
       this.terminal.setState('idle');
@@ -366,7 +375,7 @@ export class MissionRuntime implements MissionApi {
     // ---- staged narrative beats ----
     if (s.elapsed > 4 && !s.flags.has('brief')) {
       s.flags.add('brief');
-      ctx.radio('COMMAND', 'Insertion confirmed. Two contracts: restore the depot relay and eliminate the Warden. Then radio for extraction at LZ Echo.', 7);
+      ctx.radio('CARAVAN', 'Nomad, find power caches. Spend 2 cells on the relay. Share cells at trading posts: 7 for Ember, 8 for Iron. Earn 60 trust and bring 3 cells home.', 9);
       ctx.audio.play('contract_new', { priority: 3 });
     }
     void escalationPhase;
@@ -599,7 +608,7 @@ export class MissionRuntime implements MissionApi {
     const defDist = Math.hypot(data.defense.x - p.x, data.defense.z - p.z);
     const dstate = s.defense.status;
     let ddetail: string;
-    if (dstate === 'available') ddetail = `Activate the transmitter at the depot (${Math.round(defDist)} m)`;
+    if (dstate === 'available') ddetail = `Spend 2 cells at the depot (${Math.round(defDist)} m) / carrying ${s.nomad.cells}`;
     else if (dstate === 'active') ddetail = s.defense.insideNow ? `Hold the area - ${Math.round(s.defense.progress * 100)}%` : 'RETURN TO THE MARKED AREA';
     else ddetail = 'Relay restored';
     list.push({
@@ -629,11 +638,11 @@ export class MissionRuntime implements MissionApi {
     });
     const ex = s.extraction;
     const lzDist = Math.hypot(this.lz.lzX - p.x, this.lz.lzZ - p.z);
-    let edetail = 'Complete both contracts to unlock';
+    let edetail = 'Finish contracts + 3 cells + 60 clan trust';
     let estate: HudObjective['state'] = 'locked';
     if (ex.phase === 'available') {
-      edetail = `Signal the helicopter at LZ ECHO (${Math.round(lzDist)} m)`;
-      estate = 'available';
+      edetail = convoyReady(s.nomad) ? `Load 3 cells at LZ ECHO (${Math.round(lzDist)} m)` : 'Recover 3 cells and 60 clan trust';
+      estate = convoyReady(s.nomad) ? 'available' : 'locked';
     } else if (ex.phase === 'called' || ex.phase === 'inbound' || ex.phase === 'landing') {
       edetail = 'Hold the landing zone until touchdown';
       estate = 'active';
@@ -656,7 +665,19 @@ export class MissionRuntime implements MissionApi {
       tracked: false,
       distance: estate === 'locked' ? -1 : lzDist,
     });
-    // guide the player to the nearest unfinished objective (extraction takes over once both contracts are done)
+    // Guide scavenging and clan sharing through the same map / objective pipeline as combat.
+    const n = s.nomad;
+    const needsCells = n.cells < (n.relayPowered ? NOMAD.cargoCells : NOMAD.relayCells);
+    const sources = needsCells ? this.entities.crates.filter((c) => !c.opened).map((c) => c.def) : data.stations;
+    const nearest = sources.reduce<{ x: number; z: number } | null>((a, b) =>
+      !a || Math.hypot(b.x - p.x, b.z - p.z) < Math.hypot(a.x - p.x, a.z - p.z) ? b : a, null);
+    const settled = n.cargoLoaded || convoyReady(n);
+    list.unshift({
+      id: 'nomad', title: 'BRING THE CARAVAN HOME',
+      detail: `${n.cells}/3 cargo cells / ${Math.max(n.trust.ember, n.trust.iron)}/60 trust${settled ? '' : needsCells ? ' — salvage caches' : ' — share at posts (7 / 8)'}`,
+      state: settled ? 'complete' : 'active', progress: -1, tracked: false,
+      distance: settled || !nearest ? -1 : Math.hypot(nearest.x - p.x, nearest.z - p.z),
+    });
     const open = list.filter((o) => o.id !== 'extract' && o.state !== 'complete');
     let tracked: HudObjective | undefined;
     if (open.length > 0) tracked = open.reduce((a, b) => (a.distance <= b.distance ? a : b));
@@ -694,6 +715,16 @@ export class MissionRuntime implements MissionApi {
         out.push({ id: 'hunt', kind: 'hunt', x: data.hunt.searchX, z: data.hunt.searchZ, label: 'SEARCH AREA', color: '#ff8a5a', radius: data.hunt.searchRadius, visible: true, compass: true, pulse: tracked === 'hunt' });
       }
     }
+    const nomadObjective = this.objectives().find((o) => o.id === 'nomad');
+    if (nomadObjective?.tracked) {
+      const needsCells = s.nomad.cells < (s.nomad.relayPowered ? NOMAD.cargoCells : NOMAD.relayCells);
+      const sources = needsCells ? this.entities.crates.filter((c) => !c.opened).map((c) => c.def) : data.stations;
+      const p = ctx.player;
+      const target = sources.reduce<{ x: number; z: number } | null>((a, b) =>
+        !a || Math.hypot(b.x - p.x, b.z - p.z) < Math.hypot(a.x - p.x, a.z - p.z) ? b : a, null);
+      if (target) out.push({ id: 'nomad-guide', kind: needsCells ? 'crate' : 'buy', x: target.x, z: target.z,
+        label: needsCells ? 'POWER CACHE' : 'SHARE CELLS', color: '#b7eb80', visible: true, compass: true, pulse: true });
+    }
     const lzShown = ex.phase !== 'locked';
     out.push({
       id: 'lz',
@@ -713,7 +744,7 @@ export class MissionRuntime implements MissionApi {
     }
     out.push({ id: 'start', kind: 'start', x: data.playerStart.x, z: data.playerStart.z, label: 'INSERTION', visible: true, dim: true });
     for (const st of data.stations) {
-      out.push({ id: st.id, kind: st.kind, x: st.x, z: st.z, label: st.kind === 'buy' ? 'SUPPLY' : 'ARMORY', visible: true });
+      out.push({ id: st.id, kind: st.kind, x: st.x, z: st.z, label: st.kind === 'buy' ? 'CLAN EXCHANGE' : 'CLAN ARMORY', visible: true });
     }
     const player = ctx.player;
     for (const c of this.entities.crates) {

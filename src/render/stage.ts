@@ -7,15 +7,15 @@ import * as THREE from 'three';
 import { RENDER } from '../config';
 
 export const BLUE_HOUR = {
-  zenith: 0x0d1c33,
-  midSky: 0x213a5c,
-  horizon: 0x4a627d,
-  glow: 0xd98a52,
+  zenith: 0x272e31,
+  midSky: 0x666758,
+  horizon: 0xbba17d,
+  glow: 0xd28c43,
   fog: RENDER.fogColor,
-  hemiSky: 0x6f93c4,
-  hemiGround: 0x3a4550,
-  moonColor: 0xa9c4ee,
-  glowFillColor: 0xff9a66,
+  hemiSky: 0xb5b7a3,
+  hemiGround: 0x565046,
+  moonColor: 0xffe1a3,
+  glowFillColor: 0xd9a77c,
   /** Direction *toward* the moon (normalised at use). */
   moonDir: new THREE.Vector3(-0.42, 0.72, -0.55),
   /** Direction toward the horizon afterglow (west-south-west). */

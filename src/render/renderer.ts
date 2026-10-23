@@ -101,9 +101,9 @@ export class GameRenderer {
     // ---- viewmodel scene (lit to match the world) ----
     this.viewScene.environment = env;
     this.viewScene.environmentIntensity = 0.85;
-    this.viewHemi = new THREE.HemisphereLight(0x7fa0cc, 0x2a323a, 2.6);
+    this.viewHemi = new THREE.HemisphereLight(0xb5b7a3, 0x504b40, 2.6);
     this.viewScene.add(this.viewHemi);
-    this.viewSun = new THREE.DirectionalLight(0xb7cdf0, 2.4);
+    this.viewSun = new THREE.DirectionalLight(0xffe1a3, 2.4);
     this.viewSun.position.set(-0.6, 1, 0.5);
     this.viewScene.add(this.viewSun);
     this.viewLamp = new THREE.PointLight(0xffb060, 0.0, 6, 2);

@@ -1,12 +1,12 @@
 {
-  "name": "dead-signal-exclusion-zone",
+  "name": "the-nomad-ashfall-run",
   "private": true,
   "version": "1.0.0",
-  "description": "DEAD SIGNAL: EXCLUSION ZONE - the Sonnet 5.5 Zombies Game, a single-player extraction-survival FPS built with Three.js",
+  "description": "THE NOMAD: Survive the Wastelands — Ashfall Run. A power-scavenging, clan-alliance adaptation of DEAD SIGNAL.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bridge-mind/sonnet-5-5-zombies-game.git"
+    "url": "git+https://github.com/aditya-zig/the-nomad.git"
   },
   "type": "module",
   "scripts": {
@@ -14,7 +14,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "play:safe": "bash scripts/play-safe.sh"
   },
   "dependencies": {
     "three": "0.186.1"

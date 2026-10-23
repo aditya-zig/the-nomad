@@ -2,8 +2,8 @@
 import { DEFAULT_SETTINGS } from './config';
 import type { BestRun, QualityLevel, Settings } from './types';
 
-const KEY_SETTINGS = 'deadsignal.settings.v1';
-const KEY_BEST = 'deadsignal.best.v1';
+const KEY_SETTINGS = 'nomad.ashfall.settings.v1';
+const KEY_BEST = 'nomad.ashfall.best.v1';
 
 const clamp = (v: unknown, lo: number, hi: number, fallback: number): number => {
   const n = typeof v === 'number' && Number.isFinite(v) ? v : fallback;
